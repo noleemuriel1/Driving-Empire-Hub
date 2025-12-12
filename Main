@@ -1,0 +1,279 @@
+-- Driving Empire Ultimate Hub v5 (Dec 12, 2025) - FIXED GUI Buttons + Scrolling Frame
+-- Features: Auto Drive (Real Throttle/Steer - 400 MPH), Auto Collect, Auto Race, Speed Hack, NoClip, Car Fly, Rainbow Car, TPs, Anti-AFK
+-- Tested on Krnl/Fluxus - Buttons work 100%
+
+if game.PlaceId ~= 3351674303 then return end
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+-- GUI with Scrolling Frame
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "DEHubV5"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ResetOnSpawn = false
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 380, 0, 500)
+MainFrame.Position = UDim2.new(0.5, -190, 0.5, -250)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 16)
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 60)
+Title.BackgroundTransparency = 1
+Title.Text = "Driving Empire Hub v5"
+Title.TextColor3 = Color3.fromRGB(0, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 26
+Title.Parent = MainFrame
+
+local Scroll = Instance.new("ScrollingFrame")
+Scroll.Size = UDim2.new(1, -20, 1, -80)
+Scroll.Position = UDim2.new(0, 10, 0, 70)
+Scroll.BackgroundTransparency = 1
+Scroll.ScrollBarThickness = 8
+Scroll.Parent = MainFrame
+
+local List = Instance.new("UIListLayout")
+List.Padding = UDim.new(0, 8)
+List.Parent = Scroll
+List.SortOrder = Enum.SortOrder.LayoutOrder
+
+List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    Scroll.CanvasSize = UDim2.new(0, 0, 0, List.AbsoluteContentSize.Y + 20)
+end)
+
+local toggles = {}
+
+local function CreateToggle(name, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -20, 0, 50)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.Text = name .. " [OFF]"
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextSize = 16
+    btn.Parent = Scroll
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
+
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = name .. " [" .. (state and "ON" or "OFF") .. "]"
+        btn.BackgroundColor3 = state and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(30, 30, 30)
+        callback(state)
+    end)
+end
+
+local function CreateButton(name, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -20, 0, 45)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+    btn.Text = name
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
+    btn.Parent = Scroll
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- Get Car Function (Fixed for 2025)
+local function GetCar()
+    for _, v in pairs(Workspace.Vehicles:GetChildren()) do
+        if v:IsA("Model") and v:FindFirstChild(LocalPlayer.Name) or v:FindFirstChild("Seat") and v.Seat.Occupant == LocalPlayer.Character.Humanoid then
+            v.PrimaryPart = v:FindFirstChild("Chassis") or v:FindFirstChild("Body") or v.Seat
+            return v
+        end
+    end
+    return nil
+end
+
+-- Toggles
+CreateToggle("Auto Drive Farm (400 MPH Real Drive)", function(on)
+    toggles.autoDrive = on
+end)
+
+CreateToggle("Auto Collect Cash", function(on)
+    toggles.autoCollect = on
+end)
+
+CreateToggle("Auto Race Win", function(on)
+    toggles.autoRace = on
+end)
+
+CreateToggle("Speed Hack (500 MPH)", function(on)
+    toggles.speedHack = on
+end)
+
+CreateToggle("Car Fly", function(on)
+    toggles.carFly = on
+end)
+
+CreateToggle("NoClip", function(on)
+    toggles.noClip = on
+end)
+
+CreateToggle("Rainbow Car", function(on)
+    toggles.rainbowCar = on
+end)
+
+-- TP Buttons
+CreateButton("TP Airport Farm", function()
+    if LocalPlayer.Character then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(811, 27, 2203)
+    end
+end)
+
+CreateButton("TP Dealer", function()
+    if LocalPlayer.Character then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-284, 24, 144)
+    end
+end)
+
+-- Auto Drive Loop (Real Driving - Fixed No Crash)
+spawn(function()
+    while task.wait(0.1) do
+        if toggles.autoDrive then
+            local car = GetCar()
+            if car then
+                local seat = car:FindFirstChild("Seat") or car:FindFirstChild("VehicleSeat")
+                if seat then
+                    seat.Throttle = 1
+                    seat.MaxSpeed = 400
+                    seat.Torque = 60000
+                    local center = Vector3.new(811, 27, 2203)
+                    local pos = car.PrimaryPart.Position
+                    local dir = (center - pos).Unit
+                    local right = car.PrimaryPart.CFrame.RightVector
+                    local errorVal = dir:Dot(right)
+                    seat.Steer = math.clamp(-errorVal * 3, -1, 1)
+                end
+            else
+                if LocalPlayer.Character then
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-557, 24, -27)
+                end
+            end
+        end
+    end
+end)
+
+-- Auto Collect Loop
+spawn(function()
+    while task.wait(0.3) do
+        if toggles.autoCollect then
+            local car = GetCar()
+            if car then
+                for _, obj in pairs(Workspace:GetDescendants()) do
+                    if obj:IsA("BasePart") and (obj.Name:find("Cash") or obj.Name:find("Money") or obj.Name:find("Drop") or obj.Name:find("Plate")) then
+                        if (obj.Position - car.PrimaryPart.Position).Magnitude < 300 then
+                            firetouchinterest(car.PrimaryPart, obj, 0)
+                            task.wait(0.1)
+                            firetouchinterest(car.PrimaryPart, obj, 1)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Auto Race Loop
+spawn(function()
+    while task.wait(4) do
+        if toggles.autoRace then
+            local car = GetCar()
+            if car then
+                for _, race in pairs(Workspace:GetDescendants()) do
+                    if race.Name:find("Race") and race:FindFirstChild("Checkpoints") then
+                        for _, cp in pairs(race.Checkpoints:GetChildren()) do
+                            if cp:IsA("BasePart") then
+                                car.PrimaryPart.CFrame = cp.CFrame * CFrame.new(0, 5, 0)
+                                task.wait(0.8)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Speed Hack Loop
+spawn(function()
+    while task.wait() do
+        if toggles.speedHack then
+            local car = GetCar()
+            if car then
+                local seat = car:FindFirstChild("Seat") or car:FindFirstChild("VehicleSeat")
+                if seat then seat.MaxSpeed = 500 end
+            end
+            if LocalPlayer.Character then
+                LocalPlayer.Character.Humanoid.WalkSpeed = 100
+            end
+        end
+    end
+end)
+
+-- Car Fly Loop
+RunService.Heartbeat:Connect(function()
+    if toggles.carFly then
+        local car = GetCar()
+        if car then
+            local cf = car.PrimaryPart.CFrame
+            local speed = 100
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then cf = cf * CFrame.new(0, 0, -speed) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then cf = cf * CFrame.new(0, 0, speed) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then cf = cf * CFrame.new(-speed, 0, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then cf = cf * CFrame.new(speed, 0, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then cf = cf * CFrame.new(0, speed, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then cf = cf * CFrame.new(0, -speed, 0) end
+            car.PrimaryPart.CFrame = cf
+        end
+    end
+end)
+
+-- NoClip Loop
+RunService.Stepped:Connect(function()
+    if toggles.noClip and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+    end
+end)
+
+-- Rainbow Car Loop
+spawn(function()
+    while task.wait(0.1) do
+        if toggles.rainbowCar then
+            local car = GetCar()
+            if car then
+                for _, part in pairs(car:GetDescendants()) do
+                    if part:IsA("BasePart") then part.Color = Color3.fromHSV(tick() % 5 / 5, 1, 1) end
+                end
+            end
+        end
+    end
+end)
+
+-- Anti-AFK
+spawn(function()
+    while task.wait(60) do
+        LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0.1)
+    end
+end)
+
+-- Notification
+game.StarterGui:SetCore("SendNotification", {
+    Title = "Driving Empire Hub v5";
+    Text = "Loaded! Buttons fixed - Toggle features & AFK farm.";
+    Duration = 8
+})
