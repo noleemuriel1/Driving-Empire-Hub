@@ -1,52 +1,52 @@
--- Roblox Universal Animation Stealer v2.0 (Dec 13, 2025) - FULL & READY FOR LOADSTRING!
--- ✅ Steals ALL animations from the current game (default pack + custom emotes/tools)
--- ✅ GUI: Scrolling list of stolen Animation IDs + Name
--- ✅ Features: Play Selected, Stop All, Copy ID, Copy All IDs to Clipboard, Clear List
--- ✅ Works in ANY Roblox game (R15/R6)
--- Paste FULL script into GitHub → Commit → Use as loadstring!
+-- Roblox GAME Animation Stealer v3.0 FINAL (Dec 13, 2025) - Steals ONLY GAME/NPC/Object Animations!
+-- ✅ Focuses on Workspace models/NPCs/Tools/Objects (ignores players completely)
+-- ✅ Steals from Animation instances, Animator tracks, and loaded animations in non-player models
+-- ✅ GUI: Scrolling list of stolen IDs + Source Model Name
+-- ✅ Features: Play Selected on YOUR character, Stop All, Copy ID, Copy All IDs, Clear List
+-- ✅ Works in ANY Roblox game - Perfect for stealing NPC dances, tool animations, boss moves
+-- Paste FULL into GitHub → Loadstring Ready!
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local HttpService = game:GetService("HttpService")
 
 -- Wait for character
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid")
 
--- Table to store stolen animations
+-- Table to store stolen GAME animations
 local StolenAnims = {}
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AnimStealer"
+ScreenGui.Name = "GameAnimStealer"
 ScreenGui.Parent = game.CoreGui
 ScreenGui.ResetOnSpawn = false
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 500, 0, 600)
-Frame.Position = UDim2.new(0.5, -250, 0.5, -300)
-Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.Size = UDim2.new(0, 520, 0, 620)
+Frame.Position = UDim2.new(0.5, -260, 0.5, -310)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 Frame.Active = true
 Frame.Draggable = true
 Frame.Parent = ScreenGui
 
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 12)
-Corner.Parent = Frame
+local FrameCorner = Instance.new("UICorner")
+FrameCorner.CornerRadius = UDim.new(0, 16)
+FrameCorner.Parent = Frame
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 50)
+Title.Size = UDim2.new(1, 0, 0, 60)
 Title.BackgroundTransparency = 1
-Title.Text = "🔥 Universal Animation Stealer v2"
+Title.Text = "🎭 Game Animation Stealer v3"
 Title.TextColor3 = Color3.fromRGB(0, 255, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 24
+Title.TextSize = 28
 Title.Parent = Frame
 
 local Close = Instance.new("TextButton")
 Close.Size = UDim2.new(0, 40, 0, 40)
-Close.Position = UDim2.new(1, -50, 0, 5)
+Close.Position = UDim2.new(1, -50, 0, 10)
 Close.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
 Close.Text = "X"
 Close.TextColor3 = Color3.new(1,1,1)
@@ -56,29 +56,28 @@ local CloseCorner = Instance.new("UICorner")
 CloseCorner.Parent = Close
 Close.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
--- Scrolling Frame for list
+-- Scrolling Frame
 local Scroll = Instance.new("ScrollingFrame")
-Scroll.Size = UDim2.new(1, -20, 1, -120)
-Scroll.Position = UDim2.new(0, 10, 0, 60)
+Scroll.Size = UDim2.new(1, -20, 1, -130)
+Scroll.Position = UDim2.new(0, 10, 0, 70)
 Scroll.BackgroundTransparency = 1
-Scroll.ScrollBarThickness = 8
+Scroll.ScrollBarThickness = 10
+Scroll.ScrollBarImageColor3 = Color3.fromRGB(0, 255, 255)
 Scroll.Parent = Frame
 
 local ListLayout = Instance.new("UIListLayout")
-ListLayout.Padding = UDim.new(0, 5)
+ListLayout.Padding = UDim.new(0, 8)
 ListLayout.Parent = Scroll
 
 ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    Scroll.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y + 10)
+    Scroll.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y + 20)
 end)
 
--- Buttons
-local ButtonY = Frame.Size.Y.Offset - 50
-
+-- Bottom Buttons
 local PlayBtn = Instance.new("TextButton")
-PlayBtn.Size = UDim2.new(0, 100, 0, 40)
-PlayBtn.Position = UDim2.new(0, 10, 1, -50)
-PlayBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+PlayBtn.Size = UDim2.new(0, 110, 0, 45)
+PlayBtn.Position = UDim2.new(0, 10, 1, -55)
+PlayBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
 PlayBtn.Text = "Play Selected"
 PlayBtn.TextColor3 = Color3.new(1,1,1)
 PlayBtn.Font = Enum.Font.GothamBold
@@ -87,9 +86,9 @@ local PlayCorner = Instance.new("UICorner")
 PlayCorner.Parent = PlayBtn
 
 local StopBtn = Instance.new("TextButton")
-StopBtn.Size = UDim2.new(0, 100, 0, 40)
-StopBtn.Position = UDim2.new(0, 120, 1, -50)
-StopBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+StopBtn.Size = UDim2.new(0, 100, 0, 45)
+StopBtn.Position = UDim2.new(0, 130, 1, -55)
+StopBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
 StopBtn.Text = "Stop All"
 StopBtn.TextColor3 = Color3.new(1,1,1)
 StopBtn.Font = Enum.Font.GothamBold
@@ -98,9 +97,9 @@ local StopCorner = Instance.new("UICorner")
 StopCorner.Parent = StopBtn
 
 local CopyBtn = Instance.new("TextButton")
-CopyBtn.Size = UDim2.new(0, 120, 0, 40)
-CopyBtn.Position = UDim2.new(0, 230, 1, -50)
-CopyBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+CopyBtn.Size = UDim2.new(0, 130, 0, 45)
+CopyBtn.Position = UDim2.new(0, 240, 1, -55)
+CopyBtn.BackgroundColor3 = Color3.fromRGB(80, 255, 80)
 CopyBtn.Text = "Copy Selected ID"
 CopyBtn.TextColor3 = Color3.new(0,0,0)
 CopyBtn.Font = Enum.Font.GothamBold
@@ -109,8 +108,8 @@ local CopyCorner = Instance.new("UICorner")
 CopyCorner.Parent = CopyBtn
 
 local CopyAllBtn = Instance.new("TextButton")
-CopyAllBtn.Size = UDim2.new(0, 100, 0, 40)
-CopyAllBtn.Position = UDim2.new(1, -110, 1, -50)
+CopyAllBtn.Size = UDim2.new(0, 100, 0, 45)
+CopyAllBtn.Position = UDim2.new(1, -210, 1, -55)
 CopyAllBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 0)
 CopyAllBtn.Text = "Copy All"
 CopyAllBtn.TextColor3 = Color3.new(0,0,0)
@@ -120,10 +119,10 @@ local CopyAllCorner = Instance.new("UICorner")
 CopyAllCorner.Parent = CopyAllBtn
 
 local ClearBtn = Instance.new("TextButton")
-ClearBtn.Size = UDim2.new(0, 80, 0, 40)
-ClearBtn.Position = UDim2.new(1, -200, 1, -50)
+ClearBtn.Size = UDim2.new(0, 90, 0, 45)
+ClearBtn.Position = UDim2.new(1, -110, 1, -55)
 ClearBtn.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-ClearBtn.Text = "Clear List"
+ClearBtn.Text = "Clear"
 ClearBtn.TextColor3 = Color3.new(0,0,0)
 ClearBtn.Font = Enum.Font.GothamBold
 ClearBtn.Parent = Frame
@@ -133,32 +132,43 @@ ClearCorner.Parent = ClearBtn
 -- Selected animation
 local SelectedAnim = nil
 
--- Function to add animation to list
-local function AddAnim(animId, name)
-    if StolenAnims[animId] then return end
-    StolenAnims[animId] = name or "Unknown"
+-- Add animation to list
+local function AddAnim(animId, sourceName)
+    if not animId or animId == "" or StolenAnims[animId] then return end
+    StolenAnims[animId] = sourceName or "Unknown"
 
     local AnimFrame = Instance.new("Frame")
-    AnimFrame.Size = UDim2.new(1, -10, 0, 50)
-    AnimFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    AnimFrame.Size = UDim2.new(1, -10, 0, 60)
+    AnimFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
     AnimFrame.Parent = Scroll
     local AnimCorner = Instance.new("UICorner")
+    AnimCorner.CornerRadius = UDim.new(0, 10)
     AnimCorner.Parent = AnimFrame
 
-    local AnimLabel = Instance.new("TextLabel")
-    AnimLabel.Size = UDim2.new(1, -100, 1, 0)
-    AnimLabel.BackgroundTransparency = 1
-    AnimLabel.Text = name .. " - " .. animId
-    AnimLabel.TextColor3 = Color3.new(1,1,1)
-    AnimLabel.TextXAlignment = Enum.TextXAlignment.Left
-    AnimLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    AnimLabel.Font = Enum.Font.Gotham
-    AnimLabel.TextSize = 14
-    AnimLabel.Parent = AnimFrame
+    local NameLabel = Instance.new("TextLabel")
+    NameLabel.Size = UDim2.new(1, -100, 0.5, 0)
+    NameLabel.BackgroundTransparency = 1
+    NameLabel.Text = "Source: " .. (sourceName or "Unknown")
+    NameLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+    NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    NameLabel.Font = Enum.Font.GothamSemibold
+    NameLabel.TextSize = 16
+    NameLabel.Parent = AnimFrame
+
+    local IdLabel = Instance.new("TextLabel")
+    IdLabel.Size = UDim2.new(1, -100, 0.5, 0)
+    IdLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    IdLabel.BackgroundTransparency = 1
+    IdLabel.Text = animId
+    IdLabel.TextColor3 = Color3.new(1,1,1)
+    IdLabel.TextXAlignment = Enum.TextXAlignment.Left
+    IdLabel.Font = Enum.Font.Gotham
+    IdLabel.TextSize = 14
+    IdLabel.Parent = AnimFrame
 
     local SelectBtn = Instance.new("TextButton")
-    SelectBtn.Size = UDim2.new(0, 80, 1, 0)
-    SelectBtn.Position = UDim2.new(1, -90, 0, 0)
+    SelectBtn.Size = UDim2.new(0, 80, 1, -10)
+    SelectBtn.Position = UDim2.new(1, -90, 0, 5)
     SelectBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
     SelectBtn.Text = "Select"
     SelectBtn.TextColor3 = Color3.new(1,1,1)
@@ -169,52 +179,57 @@ local function AddAnim(animId, name)
 
     SelectBtn.MouseButton1Click:Connect(function()
         SelectedAnim = animId
-        Rayfield:Notify({Title = "Selected", Content = "Playing: " .. name .. " (" .. animId .. ")"})
+        game.StarterGui:SetCore("SendNotification", {Title = "Selected"; Text = "Ready to play: " .. (sourceName or "Unknown"); Duration = 3})
     end)
 end
 
--- Steal default animations
-spawn(function()
-    task.wait(2)
-    local DefaultAnims = {
-        {id = Humanoid:FindFirstChild("Animate").idle.Animation1.AnimationId, name = "Idle"},
-        {id = Humanoid:FindFirstChild("Animate").walk.WalkAnim.AnimationId, name = "Walk"},
-        {id = Humanoid:FindFirstChild("Animate").run.RunAnim.AnimationId, name = "Run"},
-        {id = Humanoid:FindFirstChild("Animate").jump.JumpAnim.AnimationId, name = "Jump"},
-        {id = Humanoid:FindFirstChild("Animate").fall.FallAnim.AnimationId, name = "Fall"},
-        {id = Humanoid:FindFirstChild("Animate").climb.ClimbAnim.AnimationId, name = "Climb"},
-        {id = Humanoid:FindFirstChild("Animate").swim.Swim.AnimationId, name = "Swim"},
-    }
-    for _, anim in pairs(DefaultAnims) do
-        if anim.id then
-            AddAnim(anim.id, anim.name)
+-- Steal from all non-player models in Workspace
+local function ScanWorkspace()
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Animation") and obj.Parent and obj.Parent.Parent and obj.Parent.Parent ~= LocalPlayer.Character and not Players:GetPlayerFromCharacter(obj.Parent.Parent) then
+            AddAnim(obj.AnimationId, obj.Parent.Parent.Name .. " (Animation)")
         end
-    end
-end)
 
--- Steal playing animations from all players
-RunService.Heartbeat:Connect(function()
-    pcall(function()
-        for _, player in pairs(Players:GetPlayers()) do
-            if player.Character and player.Character:FindFirstChild("Humanoid") then
-                for _, track in pairs(player.Character.Humanoid:GetPlayingAnimationTracks()) do
-                    local animId = track.Animation.AnimationId
-                    if animId and not StolenAnims[animId] then
-                        AddAnim(animId, player.Name .. "'s Anim")
-                    end
+        if obj:IsA("Animator") and obj.Parent and obj.Parent.Parent and not Players:GetPlayerFromCharacter(obj.Parent.Parent) then
+            for _, track in pairs(obj:GetPlayingAnimationTracks()) do
+                if track.Animation and track.Animation.AnimationId then
+                    AddAnim(track.Animation.AnimationId, obj.Parent.Parent.Name .. " (Playing)")
                 end
             end
         end
-    end)
+    end
+end
+
+-- Initial scan
+spawn(function()
+    task.wait(3)
+    ScanWorkspace()
+end)
+
+-- Continuous scan for new animations (NPCs spawning, tools, etc.)
+Workspace.DescendantAdded:Connect(function(desc)
+    task.wait(0.5) -- Delay to let load
+    if desc:IsA("Animation") or desc:IsA("Animator") then
+        ScanWorkspace()
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+    task.wait(5) -- Scan every 5 seconds for playing tracks
+    ScanWorkspace()
 end)
 
 -- Play selected
 PlayBtn.MouseButton1Click:Connect(function()
     if SelectedAnim then
+        for _, track in pairs(Humanoid:GetPlayingAnimationTracks()) do
+            track:Stop()
+        end
         local anim = Instance.new("Animation")
         anim.AnimationId = SelectedAnim
         local track = Humanoid:LoadAnimation(anim)
         track:Play()
+        track.Looped = true
     end
 end)
 
@@ -225,25 +240,25 @@ StopBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Copy selected ID
+-- Copy selected
 CopyBtn.MouseButton1Click:Connect(function()
     if SelectedAnim then
         setclipboard(SelectedAnim)
-        Rayfield:Notify({Title = "Copied", Content = SelectedAnim})
+        game.StarterGui:SetCore("SendNotification", {Title = "Copied"; Text = SelectedAnim; Duration = 4})
     end
 end)
 
--- Copy all IDs
+-- Copy all
 CopyAllBtn.MouseButton1Click:Connect(function()
-    local allIds = ""
+    local all = ""
     for id, name in pairs(StolenAnims) do
-        allIds = allIds .. id .. " -- " .. name .. "\n"
+        all = all .. id .. " -- " .. name .. "\n"
     end
-    setclipboard(allIds)
-    Rayfield:Notify({Title = "Copied All", Content = #StolenAnims .. " animations copied!"})
+    setclipboard(all)
+    game.StarterGui:SetCore("SendNotification", {Title = "Copied All"; Text = #StolenAnims .. " animations copied!"; Duration = 5})
 end)
 
--- Clear list
+-- Clear
 ClearBtn.MouseButton1Click:Connect(function()
     StolenAnims = {}
     for _, child in pairs(Scroll:GetChildren()) do
@@ -253,9 +268,9 @@ end)
 
 -- Notification
 game.StarterGui:SetCore("SendNotification", {
-    Title = "Animation Stealer v2";
-    Text = "Loaded! Stealing animations from everyone in game...";
+    Title = "Game Animation Stealer v3";
+    Text = "Loaded! Stealing animations from NPCs/Objects only...";
     Duration = 8;
 })
 
-print("Universal Animation Stealer v2 Loaded - Stealing all animations!")
+print("Game Animation Stealer v3 Loaded - Focusing on game/NPC animations!")
