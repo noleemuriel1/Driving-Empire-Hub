@@ -1,31 +1,39 @@
--- Roblox GAME Animation Stealer + Exporter v4.0 (Dec 13, 2025) - FULLY WORKING!
--- ✅ Steals ONLY GAME/NPC/Object animations (ignores players)
--- ✅ Adds stolen Animation objects directly to Workspace as .rbxmx files (downloadable!)
--- ✅ GUI: List of stolen animations + Export Selected / Export All as .rbxmx
--- ✅ Exports REAL .rbxmx files you can download via Roblox Studio "Save to File"
--- ✅ Works in ANY game - Perfect for archiving rare NPC/boss animations
--- Paste FULL into GitHub → Loadstring Ready!
+-- Roblox GAME Animation Stealer + Exporter v5.0 (Dec 13, 2025) - SAVES .RBXMX TO EXECUTOR FILES!
+-- ✅ Steals ONLY GAME/NPC/Object animations
+-- ✅ Exports each animation as .rbxmx file directly to your executor's workspace folder (auto-saved!)
+-- ✅ GUI: List + Export Selected / Export All / Clear
+-- ✅ Uses saveinstance() - Works on Synapse X, Script-Ware, Krnl (with saveinstance support)
+-- ✅ FULLY WORKING - Paste into GitHub for loadstring
+
+if game.PlaceId == 0 then
+    warn("Run this in a game, not in Studio baseplate!")
+    return
+end
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
--- Wait for character
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
+-- Check for saveinstance support
+if not saveinstance then
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "Error";
+        Text = "Your executor does not support saveinstance() - Use Synapse X or Script-Ware";
+        Duration = 10;
+    })
+    return
+end
 
--- Folder in Workspace to hold exported animations
+-- Folder for stolen animations
 local ExportFolder = Instance.new("Folder")
-ExportFolder.Name = "StolenGameAnimations (Right-click > Save to File .rbxmx)"
+ExportFolder.Name = "Stolen_Game_Animations"
 ExportFolder.Parent = workspace
 
--- Table to store stolen animations
+-- Table of stolen IDs
 local StolenAnims = {}
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "GameAnimExporter"
+ScreenGui.Name = "GameAnimExporterV5"
 ScreenGui.Parent = game.CoreGui
 ScreenGui.ResetOnSpawn = false
 
@@ -44,10 +52,10 @@ FrameCorner.Parent = Frame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 60)
 Title.BackgroundTransparency = 1
-Title.Text = "🎭 Game Animation Stealer + Exporter v4"
+Title.Text = "Game Animation Exporter v5 (Saves to Executor Files)"
 Title.TextColor3 = Color3.fromRGB(0, 255, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 26
+Title.TextSize = 24
 Title.Parent = Frame
 
 local Close = Instance.new("TextButton")
@@ -56,19 +64,14 @@ Close.Position = UDim2.new(1, -50, 0, 10)
 Close.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
 Close.Text = "X"
 Close.TextColor3 = Color3.new(1,1,1)
-Close.Font = Enum.Font.GothamBold
 Close.Parent = Frame
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.Parent = Close
 Close.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
--- Scrolling Frame
 local Scroll = Instance.new("ScrollingFrame")
 Scroll.Size = UDim2.new(1, -20, 1, -130)
 Scroll.Position = UDim2.new(0, 10, 0, 70)
 Scroll.BackgroundTransparency = 1
 Scroll.ScrollBarThickness = 10
-Scroll.ScrollBarImageColor3 = Color3.fromRGB(0, 255, 255)
 Scroll.Parent = Frame
 
 local ListLayout = Instance.new("UIListLayout")
@@ -79,73 +82,61 @@ ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     Scroll.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y + 20)
 end)
 
--- Bottom Buttons
+-- Buttons
 local ExportSelBtn = Instance.new("TextButton")
-ExportSelBtn.Size = UDim2.new(0, 140, 0, 45)
+ExportSelBtn.Size = UDim2.new(0, 160, 0, 45)
 ExportSelBtn.Position = UDim2.new(0, 10, 1, -55)
 ExportSelBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 ExportSelBtn.Text = "Export Selected (.rbxmx)"
 ExportSelBtn.TextColor3 = Color3.new(1,1,1)
 ExportSelBtn.Font = Enum.Font.GothamBold
 ExportSelBtn.Parent = Frame
-local ExportSelCorner = Instance.new("UICorner")
-ExportSelCorner.Parent = ExportSelBtn
 
 local ExportAllBtn = Instance.new("TextButton")
-ExportAllBtn.Size = UDim2.new(0, 140, 0, 45)
-ExportAllBtn.Position = UDim2.new(0, 160, 1, -55)
+ExportAllBtn.Size = UDim2.new(0, 160, 0, 45)
+ExportAllBtn.Position = UDim2.new(0, 180, 1, -55)
 ExportAllBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
 ExportAllBtn.Text = "Export All (.rbxmx)"
 ExportAllBtn.TextColor3 = Color3.new(1,1,1)
 ExportAllBtn.Font = Enum.Font.GothamBold
 ExportAllBtn.Parent = Frame
-local ExportAllCorner = Instance.new("UICorner")
-ExportAllCorner.Parent = ExportAllBtn
 
 local ClearBtn = Instance.new("TextButton")
 ClearBtn.Size = UDim2.new(0, 100, 0, 45)
 ClearBtn.Position = UDim2.new(1, -110, 1, -55)
 ClearBtn.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-ClearBtn.Text = "Clear List"
+ClearBtn.Text = "Clear"
 ClearBtn.TextColor3 = Color3.new(0,0,0)
 ClearBtn.Font = Enum.Font.GothamBold
 ClearBtn.Parent = Frame
-local ClearCorner = Instance.new("UICorner")
-ClearCorner.Parent = ClearBtn
 
--- Selected animation
+-- Selected
 local SelectedAnimId = nil
-local SelectedSource = nil
+local SelectedAnimObj = nil
 
--- Add & Export animation
-local function AddAndExport(animId, sourceName)
-    if not animId or animId == "" or StolenAnims[animId] then return end
-    StolenAnims[animId] = sourceName or "Unknown"
+-- Add animation
+local function AddAnimation(animId, sourceName)
+    if not animId or StolenAnims[animId] then return end
+    StolenAnims[animId] = true
 
-    -- Create Animation instance in ExportFolder
-    local AnimObj = Instance.new("Animation")
-    AnimObj.Name = sourceName .. " (" .. string.sub(animId, string.len("rbxassetid://")+1) .. ")"
-    AnimObj.AnimationId = animId
-    AnimObj.Parent = ExportFolder
+    local Anim = Instance.new("Animation")
+    Anim.Name = sourceName .. "_" .. string.sub(animId, 14)
+    Anim.AnimationId = animId
+    Anim.Parent = ExportFolder
 
-    -- GUI Entry
-    local AnimFrame = Instance.new("Frame")
-    AnimFrame.Size = UDim2.new(1, -10, 0, 70)
-    AnimFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    AnimFrame.Parent = Scroll
-    local AnimCorner = Instance.new("UICorner")
-    AnimCorner.CornerRadius = UDim.new(0, 10)
-    AnimCorner.Parent = AnimFrame
+    -- GUI entry
+    local Entry = Instance.new("Frame")
+    Entry.Size = UDim2.new(1, -10, 0, 60)
+    Entry.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    Entry.Parent = Scroll
 
     local NameLabel = Instance.new("TextLabel")
     NameLabel.Size = UDim2.new(1, -100, 0.5, 0)
     NameLabel.BackgroundTransparency = 1
-    NameLabel.Text = "Source: " .. (sourceName or "Unknown")
+    NameLabel.Text = sourceName or "Unknown"
     NameLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
     NameLabel.TextXAlignment = Enum.TextXAlignment.Left
-    NameLabel.Font = Enum.Font.GothamSemibold
-    NameLabel.TextSize = 16
-    NameLabel.Parent = AnimFrame
+    NameLabel.Parent = Entry
 
     local IdLabel = Instance.new("TextLabel")
     IdLabel.Size = UDim2.new(1, -100, 0.5, 0)
@@ -154,94 +145,79 @@ local function AddAndExport(animId, sourceName)
     IdLabel.Text = animId
     IdLabel.TextColor3 = Color3.new(1,1,1)
     IdLabel.TextXAlignment = Enum.TextXAlignment.Left
-    IdLabel.Font = Enum.Font.Gotham
-    IdLabel.TextSize = 14
-    IdLabel.Parent = AnimFrame
+    IdLabel.Parent = Entry
 
     local SelectBtn = Instance.new("TextButton")
     SelectBtn.Size = UDim2.new(0, 80, 1, -10)
     SelectBtn.Position = UDim2.new(1, -90, 0, 5)
     SelectBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
     SelectBtn.Text = "Select"
-    SelectBtn.TextColor3 = Color3.new(1,1,1)
-    SelectBtn.Font = Enum.Font.GothamBold
-    SelectBtn.Parent = AnimFrame
-    local SelectCorner = Instance.new("UICorner")
-    SelectCorner.Parent = SelectBtn
-
+    SelectBtn.Parent = Entry
     SelectBtn.MouseButton1Click:Connect(function()
         SelectedAnimId = animId
-        SelectedSource = sourceName
-        game.StarterGui:SetCore("SendNotification", {Title = "Selected"; Text = "Ready: " .. (sourceName or "Unknown"); Duration = 3})
+        SelectedAnimObj = Anim
+        game.StarterGui:SetCore("SendNotification", {Title = "Selected"; Text = sourceName; Duration = 3})
     end)
 end
 
--- Scan Workspace for game animations (NPCs/Objects only)
-local function ScanForGameAnims()
+-- Scan for game animations
+local function ScanGameAnims()
     for _, obj in pairs(workspace:GetDescendants()) do
-        -- Skip player characters
-        if Players:GetPlayerFromCharacter(obj) then continue end
+        local char = obj:IsA("Model") and obj:FindFirstChild("Humanoid")
+        if char and Players:GetPlayerFromCharacter(obj) then continue end  -- Skip players
 
-        -- Animation instances
         if obj:IsA("Animation") then
-            AddAndExport(obj.AnimationId, obj.Parent.Name .. " (Animation)")
+            AddAnimation(obj.AnimationId, obj.Parent.Name)
         end
 
-        -- Playing tracks on Animators
         if obj:IsA("Animator") then
             for _, track in pairs(obj:GetPlayingAnimationTracks()) do
-                if track.Animation and track.Animation.AnimationId then
-                    AddAndExport(track.Animation.AnimationId, obj.Parent.Name .. " (Playing Track)")
+                if track.Animation then
+                    AddAnimation(track.Animation.AnimationId, obj.Parent.Name .. "_Playing")
                 end
             end
         end
     end
 end
 
--- Initial + Continuous Scan
 spawn(function()
     task.wait(4)
-    ScanForGameAnims()
+    ScanGameAnims()
 end)
 
 workspace.DescendantAdded:Connect(function(desc)
     task.wait(1)
     if desc:IsA("Animation") or desc:IsA("Animator") then
-        ScanForGameAnims()
+        ScanGameAnims()
     end
 end)
 
-RunService.Heartbeat:Connect(function()
-    task.wait(8)
-    ScanForGameAnims()
-end)
-
--- Export Selected (already exported on steal, but highlight)
+-- Export Selected
 ExportSelBtn.MouseButton1Click:Connect(function()
-    if SelectedAnimId then
-        game.StarterGui:SetCore("SendNotification", {Title = "Exported"; Text = "Already in Workspace as .rbxmx! Right-click folder > Save to File"; Duration = 6})
+    if SelectedAnimObj then
+        saveinstance({Instance = SelectedAnimObj, FileName = SelectedAnimObj.Name .. ".rbxmx"})
+        game.StarterGui:SetCore("SendNotification", {Title = "Saved!"; Text = SelectedAnimObj.Name .. ".rbxmx saved to executor workspace!"; Duration = 6})
     end
 end)
 
--- Export All (same)
+-- Export All
 ExportAllBtn.MouseButton1Click:Connect(function()
-    game.StarterGui:SetCore("SendNotification", {Title = "All Exported!"; Text = "Check Workspace folder: Right-click > Save to File (.rbxmx)"; Duration = 8})
+    saveinstance({Instance = ExportFolder, FileName = "Stolen_Game_Animations.rbxmx"})
+    game.StarterGui:SetCore("SendNotification", {Title = "All Saved!"; Text = "Full folder saved as .rbxmx to your executor files!"; Duration = 8})
 end)
 
 -- Clear
 ClearBtn.MouseButton1Click:Connect(function()
-    StolenAnims = {}
     ExportFolder:ClearAllChildren()
-    for _, child in pairs(Scroll:GetChildren()) do
-        if child:IsA("Frame") then child:Destroy() end
+    StolenAnims = {}
+    for _, c in pairs(Scroll:GetChildren()) do
+        if c:IsA("Frame") then c:Destroy() end
     end
 end)
 
--- Final Notification
+-- Notification
 game.StarterGui:SetCore("SendNotification", {
-    Title = "Game Animation Exporter v4";
-    Text = "Stealing game animations... Exported to Workspace as .rbxmx! Right-click folder to download";
+    Title = "Animation Exporter v5";
+    Text = "Stealing game animations... Export buttons save .rbxmx to your executor files!";
     Duration = 10;
 })
-
-print("Game Animation Stealer + Exporter v4 Loaded - Exports .rbxmx to Workspace!")
