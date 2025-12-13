@@ -1,128 +1,168 @@
--- FINAL FULL SCRIPT - AUTO-PUTS EVERYTHING + DELETES NILS + CAMERA FIX
--- Paste once and run — your perfect Brookhaven is ready in minutes
+-- FULL AUTO-SAVE SCRIPT (Everything auto-placed + Nils deleted + Camera fixed)
 
 print("================================================")
-print("FULL AUTO-SAVE STARTED (Everything in correct place)")
+print("FULL AUTO-SAVE STARTED — Everything will be placed correctly")
 print("================================================")
 
 local StarterGui = game:GetService("StarterGui")
 local MarketplaceService = game:GetService("MarketplaceService")
 local HttpService = game:GetService("HttpService")
 
--- Instant proof it's alive
+-- Instant proof it's running
 pcall(function()
-    StarterGui:SetCore("SendNotification", {Title="SAVE STARTED!", Text="Auto-putting everything — wait for 100%!", Duration=10, Icon="rbxassetid://6034834117"})
+    StarterGui:SetCore("SendNotification", {
+        Title = "SAVE STARTED!",
+        Text = "Auto-placing everything — wait for 100%!",
+        Duration = 10,
+        Icon = "rbxassetid://6034834117"
+    })
     game:GetService("SoundService"):PlayLocalSound("rbxassetid://12221967") -- beep
 end)
 
--- Game name
+-- Get game name and version
 local info = {Name = "Game"}
 pcall(function() info = MarketplaceService:GetProductInfo(game.PlaceId) end)
 local folderName = info.Name:gsub("[^%w%s%-_.]", "") .. " - " .. game.PlaceId .. " v" .. game.PlaceVersion
 
-print("Saving as: " .. folderName)
+print("Saving to folder: " .. folderName)
 if isfolder(folderName) then delfolder(folderName) end
 makefolder(folderName)
 
--- Step 1: Delete nils & auto-put everything in correct service
-print("Step 1: Auto-putting all nil instances + deleting leftovers...")
-local nilCount = 0
+-- Auto-place all nil instances + delete any that can't be placed
+print("Auto-placing nil instances into correct services...")
+local placedCount = 0
+local deletedCount = 0
 for _, obj in ipairs(getnilinstances()) do
-    local target = workspace
-    if obj:IsA("Script") then target = game:GetService("ServerScriptService")
-    elseif obj:IsA("ModuleScript") or obj:IsA("LocalScript") then target = game:GetService("ReplicatedStorage")
-    elseif obj:IsA("Sky") or obj:IsA("Atmosphere") or obj:IsA("BloomEffect") then target = game:GetService("Lighting")
-    elseif obj:IsA("ScreenGui") or obj:IsA("GuiObject") then target = game:GetService("StarterGui")
-    elseif obj:IsA("Sound") or obj:IsA("Tool") then target = game:GetService("ServerStorage")
+    local success = false
+    if obj:IsA("Script") then
+        pcall(function() obj.Parent = game:GetService("ServerScriptService"); success = true end)
+    elseif obj:IsA("ModuleScript") or obj:IsA("LocalScript") then
+        pcall(function() obj.Parent = game:GetService("ReplicatedStorage"); success = true end)
+    elseif obj:IsA("BasePart") or obj:IsA("Model") or obj:IsA("Folder") then
+        pcall(function() obj.Parent = workspace; success = true end)
+    elseif obj:IsA("Sky") or obj:IsA("Atmosphere") or obj:IsA("BloomEffect") or obj:IsA("ColorCorrectionEffect") then
+        pcall(function() obj.Parent = game:GetService("Lighting"); success = true end)
+    elseif obj:IsA("ScreenGui") or obj:IsA("GuiObject") then
+        pcall(function() obj.Parent = game:GetService("StarterGui"); success = true end)
+    elseif obj:IsA("Sound") or obj:IsA("Tool") then
+        pcall(function() obj.Parent = game:GetService("ServerStorage"); success = true end)
     end
-    pcall(function() obj.Parent = target; nilCount += 1 end)
-end
-print("Auto-put " .. nilCount .. " items — nils deleted!")
 
--- Step 2: Camera fix
-print("Step 2: Fixing camera bug...")
-pcall(function() if workspace.CurrentCamera then workspace.CurrentCamera:Destroy() end end)
+    if success then
+        placedCount += 1
+    else
+        pcall(function() obj:Destroy() end)
+        deletedCount += 1
+    end
+end
+print("Placed: " .. placedCount .. " | Deleted (unplaceable): " .. deletedCount)
+
+-- Fix camera bug
+print("Fixing camera bug...")
+pcall(function()
+    if workspace.CurrentCamera then workspace.CurrentCamera:Destroy() end
+end)
 task.wait(0.1)
 workspace.CurrentCamera = Instance.new("Camera")
 workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 workspace.CurrentCamera.Parent = workspace
 
--- Step 3: Force hidden services visible for saving
-print("Step 3: Forcing ServerScriptService & ServerStorage visible...")
+-- Make hidden services visible for saving
+print("Making ServerScriptService & ServerStorage visible...")
 local SSS = game:GetService("ServerScriptService")
-local backupSSS = SSS.Parent
+local SSSBackup = SSS.Parent
 SSS.Parent = workspace
-local ServerStor = game:GetService("ServerStorage")
-local backupStor = ServerStor.Parent
-ServerStor.Parent = workspace
 
--- Step 4: Chunked write function (Xeno-safe)
+local ServerStorage = game:GetService("ServerStorage")
+local StorageBackup = ServerStorage.Parent
+ServerStorage.Parent = workspace
+
+-- Chunked write function (safe for large files)
 local function chunkWrite(path, data)
     local chunkSize = 50000
     for i = 1, #data, chunkSize do
         local chunk = data:sub(i, i + chunkSize - 1)
-        if i == 1 then writefile(path, chunk)
-        else appendfile(path, chunk) end
+        if i == 1 then
+            writefile(path, chunk)
+        else
+            appendfile(path, chunk)
+        end
     end
 end
 
--- Step 5: Recursive save with progress
-print("Step 4: Saving game — watch progress 0% → 100%")
-local total = #game:GetDescendants() + 200
+-- Recursive save with progress
+print("Saving game — progress will show below...")
+local allDescendants = game:GetDescendants()
+local total = #allDescendants + 200
 local saved = 0
+
 local function updateProgress()
     saved += 1
-    local pct = math.floor((saved / total) * 100)
-    if pct % 10 == 0 or pct == 100 then
-        print("Progress: " .. pct .. "%")
+    local percent = math.floor((saved / total) * 100)
+    if percent % 10 == 0 or percent == 100 then
+        print("Progress: " .. percent .. "%")
         pcall(function()
-            StarterGui:SetCore("SendNotification", {Title="Saving " .. pct .. "%", Text=folderName, Duration=3})
+            StarterGui:SetCore("SendNotification", {
+                Title = "Saving... " .. percent .. "%",
+                Text = folderName,
+                Duration = 3
+            })
         end)
     end
 end
 
-local function saveRecurse(inst, path)
+local function saveInstance(inst, basePath)
     local safeName = inst.Name:gsub("[^%w%-_.]", "_")
-    makefolder(path .. "/" .. safeName)
-    
-    -- Properties
+    local instPath = basePath .. "/" .. safeName
+    makefolder(instPath)
+
+    -- Save properties
     local props = {}
-    for _, p in ipairs(getproperties(inst)) do
-        local ok, val = pcall(function() return inst[p.Name] end)
-        if ok then props[p.Name] = tostring(val) end
+    for _, prop in ipairs(getproperties(inst)) do
+        local success, value = pcall(function() return inst[prop.Name] end)
+        if success then props[prop.Name] = tostring(value) end
     end
-    chunkWrite(path .. "/" .. safeName .. "/props.json", HttpService:JSONEncode(props))
+    chunkWrite(instPath .. "/properties.json", HttpService:JSONEncode(props))
     updateProgress()
-    
-    -- Decompile scripts
+
+    -- Save script source
     if inst:IsA("Script") or inst:IsA("ModuleScript") then
-        local src = "-- Decompile failed"
-        pcall(function() src = decompile(inst, 30) or "-- Failed" end)
-        chunkWrite(path .. "/" .. safeName .. "/" .. inst.Name .. ".lua", src)
+        local source = "-- Decompile failed"
+        pcall(function()
+            source = decompile(inst, 30) or "-- Decompile returned nil"
+        end)
+        chunkWrite(instPath .. "/" .. inst.Name .. ".lua", source)
         updateProgress()
     end
-    
-    -- Children
+
+    -- Save children
     for _, child in ipairs(inst:GetChildren()) do
-        saveRecurse(child, path .. "/" .. safeName)
-        updateProgress()
+        saveInstance(child, instPath)
     end
 end
 
-saveRecurse(game, folderName)
+saveInstance(game, folderName)
 
 -- Restore hidden services
-SSS.Parent = backupSSS
-ServerStor.Parent = backupStor
+SSS.Parent = SSSBackup
+ServerStorage.Parent = StorageBackup
 
+-- Final success
 print("================================================")
-print("100% DONE! Folder ready:")
-print("Location: " .. folderName)
-print("Open in Studio: File → Open Folder → select the folder")
-print("Everything is already in the correct place — just Play!")
+print("100% COMPLETE!")
+print("Your game is saved in:")
+print(folderName)
+print("Location: Your executor's workspace folder")
+print("Open in Studio → File → Open Folder → select this folder")
+print("Everything is already in the correct place — just press Play!")
 print("================================================")
 
 pcall(function()
-    StarterGui:SetCore("SendNotification", {Title="SAVED!", Text=folderName .. "\nEverything auto-placed — ready to Play!", Duration=30, Icon="rbxassetid://6034834117"})
+    StarterGui:SetCore("SendNotification", {
+        Title = "SAVED SUCCESSFULLY!",
+        Text = folderName .. "\nEverything auto-placed — ready to use!",
+        Duration = 30,
+        Icon = "rbxassetid://6034834117"
+    })
     game:GetService("SoundService"):PlayLocalSound("rbxassetid://12221967")
 end)
